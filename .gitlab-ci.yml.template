@@ -1,0 +1,161 @@
+# 🚀 GitLab CI 配置模板
+# 复制此文件到项目的 .gitlab-ci.yml
+# 详细说明：ops/cicd-gitlab-ci.md
+
+image: drupal:10.2-php8.3
+
+.variables:
+  MYSQL_ROOT_PASSWORD: ${CI_MYSQL_ROOT_PASSWORD}
+  MYSQL_DATABASE: ${CI_MYSQL_DATABASE}
+  MYSQL_USER: ${CI_MYSQL_USER}
+  MYSQL_PASSWORD: ${CI_MYSQL_PASSWORD}
+variables:
+  COMPOSER_MEMORY_LIMIT: -1
+  PHP_MEMORY_LIMIT: 512M
+
+stages:
+  - validate
+  - build
+  - test
+  - deploy
+
+# 验证阶段
+validate:code-quality:
+  stage: validate
+  script:
+    - composer install --no-interaction --no-progress --prefer-dist
+    - vendor/bin/phpcs --standard=Drupal,DrupalPractice web/modules/custom --report=checkstyle > reports/phpcs.xml
+    - vendor/bin/phpstan analyse web/modules/custom --level=max --error-format=checkstyle > reports/phpstan.xml
+    - composer audit --no-dev
+  artifacts:
+    reports:
+      php_code_quality: reports/phpstan.xml
+      code_quality: reports/phpcs.xml
+  only:
+    - develop
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "develop"
+
+# 构建阶段
+build:dependencies:
+  stage: build
+  script:
+    - composer install --no-dev --optimize-autoloader --no-interaction
+    - if [ -d "web/themes/custom" ]; then
+        npm ci --prefix web/themes/custom;
+        npm run build --prefix web/themes/custom;
+      fi
+  artifacts:
+    paths:
+      - vendor/
+      - web/
+    expire_in: 12 hours
+  cache:
+    key: "$CI_COMMIT_REF_SLUG"
+    paths:
+      - vendor/
+      - node_modules/
+
+# 单元测试
+test:unit:
+  stage: test
+  services:
+    - mysql:8.0
+  script:
+    - composer install --no-interaction
+    - vendor/bin/phpunit --testsuite=unit --coverage-text --coverage-clover=coverage/unit.xml
+  dependencies:
+    - build:dependencies
+  artifacts:
+    reports:
+      code_coverage: coverage/unit.xml
+    paths:
+      - coverage/
+
+# 功能测试
+test:functional:
+  stage: test
+  services:
+    - mysql:8.0
+  script:
+    - composer install --no-interaction
+    - vendor/bin/drush site:install standard \
+        --db-url="mysql://${CI_MYSQL_USER}:${CI_MYSQL_PASSWORD}@mysql/${CI_MYSQL_DATABASE}" \
+        --account-name=admin \
+        --account-pass=admin \
+        --site-name="CI Test" \
+        --locale=en \
+        -y
+    - vendor/bin/phpunit --testsuite=functional --coverage-text --coverage-clover=coverage/functional.xml
+  dependencies:
+    - build:dependencies
+  artifacts:
+    reports:
+      code_coverage: coverage/functional.xml
+    paths:
+      - coverage/
+
+# 部署到开发环境
+deploy:development:
+  stage: deploy
+  environment:
+    name: development
+    url: https://dev.example.com
+  script:
+    - apt-get update && apt-get install -y rsync openssh-client
+    - rsync -avz --delete --exclude='.git' --exclude='sites/*/files' --exclude='sites/default/settings.php' . ${CI_DEV_USER}@${CI_DEV_SERVER}:${CI_DEV_PATH}
+    - ssh ${CI_DEV_USER}@${CI_DEV_SERVER} "
+        cd ${CI_DEV_PATH} &&
+        ./vendor/bin/drush updatedb --strict=0 -y &&
+        ./vendor/bin/drush config:import -y &&
+        ./vendor/bin/drush cache:rebuild &&
+        ./vendor/bin/drush deploy:status
+      "
+  only:
+    - develop
+  when: on_success
+
+# 部署到预发环境
+deploy:staging:
+  stage: deploy
+  environment:
+    name: staging
+    url: https://staging.example.com
+  script:
+    - apt-get update && apt-get install -y rsync openssh-client
+    - rsync -avz --delete --exclude='.git' --exclude='sites/*/files' . ${CI_STAGING_USER}@${CI_STAGING_SERVER}:${CI_STAGING_PATH}
+    - ssh ${CI_STAGING_USER}@${CI_STAGING_SERVER} "
+        cd ${CI_STAGING_PATH} &&
+        ./vendor/bin/drush updatedb --strict=0 -y &&
+        ./vendor/bin/drush config:import -y &&
+        ./vendor/bin/drush cache:rebuild &&
+        ./vendor/bin/drush deploy:status
+      "
+  when: manual
+  only:
+    - main
+
+# 部署到生产环境
+deploy:production:
+  stage: deploy
+  environment:
+    name: production
+    url: https://www.example.com
+  script:
+    - apt-get update && apt-get install -y rsync openssh-client
+    - rsync -avz --delete --exclude='.git' --exclude='sites/*/files' . ${CI_PROD_USER}@${CI_PROD_SERVER}:${CI_PROD_PATH}
+    - ssh ${CI_PROD_USER}@${CI_PROD_SERVER} "
+        cd ${CI_PROD_PATH} &&
+        ./vendor/bin/drush updatedb --strict=0 -y &&
+        ./vendor/bin/drush config:import -y &&
+        ./vendor/bin/drush cache:rebuild &&
+        ./vendor/bin/drush deploy:status
+      "
+  when: manual
+  only:
+    - main
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'main' && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == 'main'
+      variables:
+        CI_ALLOW_PRODUCTION_DEPLOY: "true"
