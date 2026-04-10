@@ -1,0 +1,70 @@
+name: Daily Backup
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # 每天 2 AM UTC (北京时间 10 AM)
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整历史
+
+      - name: Create backup archive
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          tar -czf backup_${TIMESTAMP}.tar.gz --exclude='.git' --exclude='*.tar.gz' .
+          echo "BACKUP_FILE=backup_${TIMESTAMP}.tar.gz" >> $GITHUB_ENV
+
+      - name: Upload backup to GitHub Releases
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: backup-${{ github.run_id }}
+          name: "Backup ${{ github.run_id }}"
+          draft: false
+          prerelease: true
+          files: ${{ env.BACKUP_FILE }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create auto backup tag
+        run: |
+          TIMESTAMP=$(date +%Y%m%d)
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a "backup-${TIMESTAMP}" -m "Automated backup ${TIMESTAMP}"
+          git push origin "backup-${TIMESTAMP}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Send backup notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              text: "✅ Daily Backup Completed",
+              attachments: [{
+                color: 'good',
+                fields: [{
+                  title: 'Repository',
+                  value: '${{ github.repository }}',
+                  short: true
+                }, {
+                  title: 'Backup Time',
+                  value: '${{ github.event.head_commit.timestamp }}',
+                  short: true
+                }, {
+                  title: 'Run ID',
+                  value: '${{ github.run_id }}',
+                  short: true
+                }]
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: always()

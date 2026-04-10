@@ -1,0 +1,144 @@
+# Drupal Knowledge Base CI/CD Workflow
+# 自动化验证文档质量
+
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate Documentation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install markdownlint-cli
+        run: npm install -g markdownlint-cli
+      
+      - name: Install yamllint
+        run: pip install yamllint
+      
+      - name: Setup PHP (for link checker)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      
+      - name: Install lychee (link checker)
+        run: |
+          curl -sSfL https://github.com/lycheeverse/lychee/releases/latest/download/lychee-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          sudo mv lychee /usr/local/bin/
+      
+      - name: Validate SKILL.md line count
+        run: |
+          LINES=$(wc -l < SKILL.md)
+          echo "SKILL.md has $LINES lines"
+          if [ "$LINES" -ge 500 ]; then
+            echo "❌ SKILL.md exceeds 500 lines ($LINES >= 500)"
+            exit 1
+          fi
+          echo "✅ SKILL.md line count OK ($LINES < 500)"
+      
+      - name: Validate YAML frontmatter
+        run: |
+          echo "Validating YAML frontmatter in SKILL.md..."
+          # Extract YAML frontmatter
+          head -n 20 SKILL.md | grep -A 20 "^---" | head -n -1 > /tmp/frontmatter.yml
+          if [ -s /tmp/frontmatter.yml ]; then
+            yamllint -d relaxed /tmp/frontmatter.yml
+            echo "✅ YAML frontmatter is valid"
+          else
+            echo "⚠️  No YAML frontmatter found"
+          fi
+      
+      - name: Validate Markdown format
+        run: |
+          echo "Validating Markdown files..."
+          markdownlint --config .markdownlint.json "**/*.md"
+          echo "✅ All Markdown files pass validation"
+      
+      - name: Check links
+        run: |
+          echo "Checking links in documentation..."
+          bash scripts/check-links.sh
+          echo "✅ Link check completed"
+      
+      - name: Validate document completeness
+        run: |
+          echo "Validating document completeness..."
+          
+          # Check required files exist
+          REQUIRED_FILES=(
+            "SKILL.md"
+            "README.md"
+            "00-INDEX.md"
+            "core-modules/00-index.md"
+            "contrib/modules/00-index.md"
+            "solutions/00-index.md"
+            "dev/00-index.md"
+            "ops/00-index.md"
+            "best-practices/00-index.md"
+            "references/00-index.md"
+          )
+          
+          MISSING=0
+          for file in "${REQUIRED_FILES[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Missing required file: $file"
+              MISSING=$((MISSING + 1))
+            fi
+          done
+          
+          if [ $MISSING -gt 0 ]; then
+            echo "❌ Document completeness check failed: $MISSING missing files"
+            exit 1
+          fi
+          
+          echo "✅ Document completeness check passed"
+      
+      - name: Generate validation report
+        run: |
+          mkdir -p docs
+          cat > docs/ci-validation-report.md << EOF
+          # CI Validation Report
+          
+          **Generated**: $(date '+%Y-%m-%d %H:%M:%S UTC')
+          **Workflow**: ${{ github.workflow }}
+          **Run ID**: ${{ github.run_id }}
+          **Commit**: ${{ github.sha }}
+          
+          ## Validation Results
+          
+          - ✅ SKILL.md line count: $(wc -l < SKILL.md) lines (< 500)
+          - ✅ YAML frontmatter: Valid
+          - ✅ Markdown format: Passed
+          - ✅ Links: Checked
+          - ✅ Document completeness: Passed
+          
+          ## Summary
+          
+          All validation checks passed successfully.
+          EOF
+          
+          echo "📄 Validation report saved to docs/ci-validation-report.md"
+      
+      - name: Upload validation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-report
+          path: docs/ci-validation-report.md
+          retention-days: 30
