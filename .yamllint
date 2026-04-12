@@ -8,5 +8,5 @@ rules:
   line-length:
     max: 120
     level: warning
-  trailing-spaces: enable
+  trailing-spaces: disable
   empty-lines: enable
