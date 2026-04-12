@@ -5,10 +5,10 @@ description: Complete guide to Drupal 11 Theme Development. Covers Twig template
 
 # Drupal 主题开发完整指南
 
-**版本**: v1.0  
-**Drupal 版本**: 11.x  
-**状态**: 活跃维护  
-**更新时间**: 2026-04-08  
+**版本**: v1.0
+**Drupal 版本**: 11.x
+**状态**: 活跃维护
+**更新时间**: 2026-04-08
 
 ---
 
@@ -201,14 +201,14 @@ function mytheme_process_global(&$variables) {
 function mytheme_preprocess_page(&$variables) {
   // 添加自定义变数
   $variables['custom_message'] = get_custom_message();
-  
+
   // 条件性地添加 CSS 类
   if (\Drupal::currentUser()->isAuthenticated()) {
     $variables['attributes']->addClass('logged-in');
   } else {
     $variables['attributes']->addClass('anonymous');
   }
-  
+
   // 添加面包屑导航
   $breadcrumbs = \Drupal::service('breadcrumb.builder')->build(\Drupal::request());
   $variables['breadcrumbs'] = $breadcrumbs;
@@ -222,7 +222,7 @@ function mytheme_preprocess_node(&$variables) {
   $author = $variables['node']->getOwner();
   $variables['author_name'] = $author->getDisplayName();
   $variables['author_picture'] = $author->getPicture()->uri->value;
-  
+
   // 设置时间戳格式
   $variables['date'] = format_date($variables['node']->getChangedTime(), 'short');
 }
@@ -304,17 +304,17 @@ paragraph.html.twig
 {{ attach_library('mytheme/global-scripts') }}
 
 <div{{ attributes }}>
-  
+
   {# Header #}
   <header class="site-header">
     {{ page.header }}
   </header>
-  
+
   {# Navigation #}
   <nav class="site-navigation">
     {{ primary_menu }}
   </nav>
-  
+
   {# Main content #}
   <div class="site-main container">
     {% if breadcrumbs %}
@@ -322,45 +322,45 @@ paragraph.html.twig
         {{ breadcrumbs }}
       </nav>
     {% endif %}
-    
+
     {% if content_top %}
       <div class="content-top">
         {{ content_top }}
       </div>
     {% endif %}
-    
+
     <main class="page-content"{{ content_attributes }}>
       {% if title %}
         <h1 class="page-title">{{ title }}</h1>
       {% endif %}
-      
+
       {{ page.content }}
     </main>
-    
+
     {% if sidebar_primary %}
       <aside class="sidebar-primary">
         {{ sidebar_primary }}
       </aside>
     {% endif %}
-    
+
     {% if sidebar_secondary %}
       <aside class="sidebar-secondary">
         {{ sidebar_secondary }}
       </aside>
     {% endif %}
-    
+
     {% if content_bottom %}
       <div class="content-bottom">
         {{ content_bottom }}
       </div>
     {% endif %}
   </div>
-  
+
   {# Footer #}
   <footer class="site-footer">
     {{ page.footer }}
   </footer>
-  
+
 </div>
 
 {{ page_bottom }}
@@ -395,15 +395,15 @@ paragraph.html.twig
   {% if title_prefix %}
     <div class="title-prefix">{{ title_prefix }}</div>
   {% endif %}
-  
+
   {% if title %}
     <h2{{ title_attributes }}><a href="{{ url }}">{{ title }}</a></h2>
   {% endif %}
-  
+
   {% if title_suffix %}
     <div class="title-suffix">{{ title_suffix }}</div>
   {% endif %}
-  
+
   {# Meta #}
   <div class="node-meta">
     {% if author_picture %}
@@ -411,16 +411,16 @@ paragraph.html.twig
         {{ author_picture }}
       </div>
     {% endif %}
-    
+
     <div class="node-info">
       {% if name %}
         <span class="author">{{ author_name }}</span>
       {% endif %}
-      
+
       {% if date %}
         <time datetime="{{ date }}">{{ date }}</time>
       {% endif %}
-      
+
       {% if tags %}
         <div class="terms">
           {% for term in tags %}
@@ -430,10 +430,10 @@ paragraph.html.twig
       {% endif %}
     </div>
   </div>
-  
+
   {# Content #}
   {{ content }}
-  
+
 </article>
 ```
 
@@ -447,40 +447,40 @@ paragraph.html.twig
 #}
 
 <div class="commerce-product{{_attributes.addClass('product-' ~ bundle)}}">
-  
+
   {# Product Image #}
   <div class="product-image">
     {{ content.field_product_image }}
   </div>
-  
+
   {# Product Details #}
   <div class="product-details">
     <h1 class="product-title"{{ title_attributes }}>{{ label }}</h1>
-    
+
     {% if price %}
       <div class="product-price">
         {{ price }}
       </div>
     {% endif %}
-    
+
     <div class="product-description">
       {{ content.field_description }}
     </div>
-    
+
     {# SKU #}
     {% if sku %}
       <div class="product-sku">
         <strong>SKU:</strong> {{ sku }}
       </div>
     {% endif %}
-    
+
     {# Add to Cart #}
     {% if add_to_cart %}
       <div class="product-actions">
         {{ add_to_cart }}
       </div>
     {% endif %}
-    
+
     {# Additional Fields #}
     {{ content|without(
       'field_product_image',
@@ -489,7 +489,7 @@ paragraph.html.twig
       'add_to_cart'
     ) }}
   </div>
-  
+
 </div>
 ```
 
@@ -509,17 +509,17 @@ paragraph.html.twig
 #}
 
 <div class="paragraph{{ paragraph_attributes.addClass('paragraph--type--' | html_attr(type)) }}">
-  
+
   {# Title #}
   {% if label %}
     <h2>{{ label }}</h2>
   {% endif %}
-  
+
   {# Content #}
   <div class="paragraph__content">
     {{ content }}
   </div>
-  
+
 </div>
 ```
 
@@ -533,17 +533,17 @@ paragraph.html.twig
 #}
 
 <section class="paragraph paragraph--type--text-block{{ paragraph_attributes.addClass('text-block--' ~ view_mode)}}">
-  
+
   {% if content.field_title %}
     <h2 class="text-block__title">
       {{ content.field_title }}
     </h2>
   {% endif %}
-  
+
   <div class="text-block__content">
     {{ content.body }}
   </div>
-  
+
 </section>
 ```
 
@@ -559,17 +559,17 @@ paragraph.html.twig
 {{ attach_library('mytheme/text-block') }}
 
 <section class="paragraph paragraph--type--text-block paragraph--view-mode--default{{ paragraph_attributes.addClass('text-block--' ~ view_mode)}}">
-  
+
   {% if content.field_title %}
     <h2 class="text-block__title">
       {{ content.field_title }}
     </h2>
   {% endif %}
-  
+
   <div class="text-block__content">
     {{ content.body }}
   </div>
-  
+
 </section>
 ```
 
@@ -603,19 +603,19 @@ paragraphs--image:
 ```twig
 {# paragraph--image.html.twig #}
 <div class="paragraph paragraph--type--image{{ paragraph_attributes.addClass('alignment-' ~ content.field_image.0.alignment.value)}}">
-  
+
   {% if content.field_image %}
     <figure{{ figure_attributes }}>
       <img {{ content.field_image }}
            alt="{{ content.field_image.0.alt }}"
            class="image-style-{{ view_mode }}">
-      
+
       {% if content.field_caption %}
         <figcaption>{{ content.field_caption }}</figcaption>
       {% endif %}
     </figure>
   {% endif %}
-  
+
 </div>
 ```
 
@@ -680,15 +680,15 @@ three_col_section:
 #}
 
 <div class="layout twocol-section{{ classes }}">
-  
+
   <div class="layout__region layout__region-first">
     {{ content.first }}
   </div>
-  
+
   <div class="layout__region layout__region-second">
     {{ content.second }}
   </div>
-  
+
 </div>
 ```
 
@@ -705,28 +705,28 @@ use Drupal\Core\Layout\LayoutPluginBase;
  * Defines a custom two column layout.
  */
 class TwoColumnLayout extends LayoutPluginBase {
-  
+
   /**
    * {@inheritdoc}
    */
   public function build() {
     $build = [];
-    
+
     $build['first'] = [
       '#tag' => 'div',
       '#attributes' => ['class' => ['col', 'col-first']],
       '#children' => $this->buildRegion('first'),
     ];
-    
+
     $build['second'] = [
       '#tag' => 'div',
       '#attributes' => ['class' => ['col', 'col-second']],
       '#children' => $this->buildRegion('second'),
     ];
-    
+
     return $build;
   }
-  
+
   /**
    * {@inheritdoc}
    */
@@ -736,7 +736,7 @@ class TwoColumnLayout extends LayoutPluginBase {
       $this->t('Second Column'),
     ];
   }
-  
+
 }
 ```
 
@@ -756,28 +756,28 @@ class TwoColumnLayout extends LayoutPluginBase {
 #}
 
 <article class="commerce-product-card{{ attributes.addClass('view-mode--teaser') }}">
-  
+
   {# Product Image #}
   <div class="product-card__image">
     {{ content.field_product_image }}
   </div>
-  
+
   {# Product Info #}
   <div class="product-card__info">
     <h3 class="product-card__title">
       <a href="{{ url }}">{{ label }}</a>
     </h3>
-    
+
     {% if price %}
       <div class="product-card__price">
         {{ price }}
       </div>
     {% endif %}
-    
+
     <div class="product-card__sku">
       <strong>SKU:</strong> {{ content.field_sku }}
     </div>
-    
+
     {# Short Description #}
     {% if field_short_description %}
       <div class="product-card__description">
@@ -785,7 +785,7 @@ class TwoColumnLayout extends LayoutPluginBase {
       </div>
     {% endif %}
   </div>
-  
+
 </article>
 ```
 
@@ -799,18 +799,18 @@ class TwoColumnLayout extends LayoutPluginBase {
 #}
 
 <div class="commerce-cart{{ attributes.addClass('cart-page') }}">
-  
+
   <h1>{{ 'Shopping Cart'|t }}</h1>
-  
+
   {{ content }}
-  
+
   {# Cart Subtotal #}
   {% if cart_total %}
     <div class="cart-subtotal">
       <strong>{{ 'Subtotal:'|t }}</strong> {{ cart_total }}
     </div>
   {% endif %}
-  
+
   {# Promo Code #}
   <div class="cart-promo">
     <form class="cart-promo-form" method="post" action="{{ path('commerce_cart.add_discount') }}">
@@ -818,7 +818,7 @@ class TwoColumnLayout extends LayoutPluginBase {
       <button type="submit">{{ 'Apply'|t }}</button>
     </form>
   </div>
-  
+
 </div>
 ```
 
@@ -834,13 +834,13 @@ class TwoColumnLayout extends LayoutPluginBase {
 #}
 
 <div class="commerce-checkout-step{{ attributes.addClass('step--' ~ step)|html_attr}}">
-  
+
   <h2>{{ step_label }}</h2>
-  
+
   <div class="step-content">
     {{ content }}
   </div>
-  
+
 </div>
 ```
 
@@ -854,29 +854,29 @@ class TwoColumnLayout extends LayoutPluginBase {
 #}
 
 <article class="commerce-order-confirmation{{ attributes }}">
-  
+
   <h1>{{ 'Thank you for your order!'|t }}</h1>
-  
+
   <div class="order-details">
     <dl class="order-info">
       <dt>{{ 'Order number:'|t }}</dt>
       <dd>{{ order_number }}</dd>
-      
+
       <dt>{{ 'Total:'|t }}</dt>
       <dd>{{ total }}</dd>
-      
+
       <dt>{{ 'Date:'|t }}</dt>
       <dd>{{ date }}</dd>
     </dl>
-    
+
     <div class="order-items">
       {{ order_items }}
     </div>
-    
+
     {{ shipping_address }}
     {{ billing_address }}
   </div>
-  
+
 </article>
 ```
 
@@ -906,7 +906,7 @@ node--product--view--mode.php
   &__image { }
   &__title { }
   &--large { }
-  
+
   &__image:hover { }
 }
 ```
@@ -987,11 +987,11 @@ $breakpoints: (
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
-  
+
   @include respond(tablet) {
     grid-template-columns: 1fr 1fr;
   }
-  
+
   @include respond(wide) {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -1051,33 +1051,33 @@ drush mix:disable
 ## 📊 常见问题 (FAQ)
 
 ### Q1: 如何创建子主题？
-**A**: 
+**A**:
 1. 创建 `.info.yml` 文件，设置 `base theme: stable` 或其他基础主题
 2. 添加模板文件覆盖
 3. 清除缓存
 
 ### Q2: 如何调试模板不生效？
-**A**: 
+**A**:
 1. 检查文件名和命名规范是否正确
 2. 确认模板路径
 3. 清空缓存：`drush cr`
 4. 启用 Twig 调试查看建议
 
 ### Q3: 如何优化主题性能？
-**A**: 
+**A**:
 1. 使用 CSS/JS 聚合
 2. 延迟加载非关键资源
 3. 使用 CDN 托管资源
 4. 优化图片和字体
 
 ### Q4: 如何处理多语言主题？
-**A**: 
+**A**:
 1. 创建语言特定的模板文件
 2. 使用 `{{ site_name }}` 等多语言变量
 3. 配置语言检测
 
 ### Q5: 如何创建自定义布局？
-**A**: 
+**A**:
 1. 定义 `layouts.yml` 文件
 2. 创建布局 PHP 插件
 3. 创建布局模板文件
@@ -1114,8 +1114,8 @@ drush mix:disable
 
 ---
 
-**文档版本**: v1.0  
-**状态**: 活跃维护  
+**文档版本**: v1.0
+**状态**: 活跃维护
 **最后更新**: 2026-04-08
 
 ---
@@ -1126,6 +1126,6 @@ drush mix:disable
 
 ---
 
-*下一篇*: 暂无  
-*返回*: [核心模块索引](core-modules/00-index.md)  
+*下一篇*: 暂无
+*返回*: [核心模块索引](core-modules/00-index.md)
 *上一篇*: 暂无
