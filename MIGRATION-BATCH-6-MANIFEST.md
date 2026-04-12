@@ -56,11 +56,11 @@ core-modules/15-theme-development.md: 1131 行 ✅
 
 ## CI/CD 状态
 
-- [ ] 代码提交
-- [ ] 推送到 GitHub
-- [ ] PR 创建
-- [ ] CI/CD 检查
-- [ ] PR 合并
+- [x] 代码提交
+- [x] 推送到 GitHub
+- [x] PR 创建 (#7)
+- [x] CI/CD 检查
+- [x] PR 合并 (2026-04-12 15:15 GMT+8)
 
 ---
 
