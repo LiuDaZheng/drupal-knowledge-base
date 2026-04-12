@@ -1,0 +1,77 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [renew-v2]
+  pull_request:
+    branches: [renew-v2]
+
+jobs:
+  validate:
+    name: Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: YAML Lint Validation
+        run: |
+          npm install -g yamllint
+          echo "Checking YAML files..."
+          yaml_files=$(find . -name "*.yml" -o -name "*.yaml" 2>/dev/null)
+          if [ -n "$yaml_files" ]; then
+            echo "$yaml_files" | xargs yamllint || exit 1
+            echo "✅ YAML validation passed"
+          else
+            echo "ℹ️ No YAML files found"
+          fi
+
+      - name: Markdown Lint Validation
+        run: |
+          npm install -g markdownlint-cli
+          echo "Checking Markdown files..."
+          md_files=$(find . -name "*.md" 2>/dev/null)
+          if [ -n "$md_files" ]; then
+            echo "$md_files" | xargs markdownlint || exit 1
+            echo "✅ Markdown validation passed"
+          else
+            echo "ℹ️ No Markdown files found"
+          fi
+
+      - name: File Structure Check
+        run: |
+          echo "Checking project structure..."
+          if [ -f "README.md" ]; then
+            echo "✓ Found README.md"
+          fi
+          
+          if [ -d "docs" ]; then
+            echo "✓ Found docs directory"
+          fi
+          
+          if [ -d "src" ]; then
+            echo "✓ Found src directory"
+          fi
+
+      - name: Security Scan
+        run: |
+          echo "Running security scan..."
+          # Check for potential secrets
+          if grep -r "api_key\s*[:=]\|apikey\s*[:=]\|secret\s*[:=]" \
+            --include="*.yml" --include="*.yaml" --include="*.md" . 2>/dev/null | grep -v "#"; then
+            echo "⚠️ Potential secrets detected!"
+            exit 1
+          fi
+          echo "✅ Security scan passed"
+
+      - name: Summary
+        run: |
+          echo "==================================="
+          echo "✅ All validation checks passed!"
+          echo "==================================="
