@@ -22,7 +22,7 @@ jobs:
 
       - name: YAML Lint Validation
         run: |
-          npm install -g yamllint
+          pip install yamllint
           echo "Checking YAML files..."
           yaml_files=$(find . -name "*.yml" -o -name "*.yaml" 2>/dev/null)
           if [ -n "$yaml_files" ]; then
