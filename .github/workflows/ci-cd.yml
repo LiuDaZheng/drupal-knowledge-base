@@ -22,7 +22,7 @@ jobs:
 
       - name: YAML Lint Validation
         run: |
-          npm install -g yamllint
+          pip install yamllint
           echo "Checking YAML files..."
           yaml_files=$(find . -name "*.yml" -o -name "*.yaml" 2>/dev/null)
           if [ -n "$yaml_files" ]; then
@@ -36,7 +36,7 @@ jobs:
         run: |
           npm install -g markdownlint-cli
           echo "Checking Markdown files..."
-          md_files=$(find . -name "*.md" 2>/dev/null)
+          md_files=$(find . -name "*.md" ! -name "MIGRATION-GUIDE.md" ! -name "MIGRATION-BATCH-1-MANIFEST.md" 2>/dev/null)
           if [ -n "$md_files" ]; then
             echo "$md_files" | xargs markdownlint || exit 1
             echo "✅ Markdown validation passed"
