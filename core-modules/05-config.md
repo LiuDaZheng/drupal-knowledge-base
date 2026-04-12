@@ -5,10 +5,10 @@ description: Complete guide to Drupal Configuration System. Covers configuration
 
 # Drupal Configuration 配置系统完整指南
 
-**版本**: v2.0  
-**Drupal 版本**: 11.x, 12.x  
-**状态**: 活跃维护  
-**更新时间**: 2026-04-07  
+**版本**: v2.0
+**Drupal 版本**: 11.x, 12.x
+**状态**: 活跃维护
+**更新时间**: 2026-04-07
 
 ---
 
@@ -222,7 +222,7 @@ sequenceDiagram
     participant Active as 活动存储
     participant File as 文件系统
     participant Cache as 缓存系统
-    
+
     User->>+Drush: config:export
     Drush->>+Active: 读取活动配置
     Active-->>-Drush: 返回配置列表
@@ -242,15 +242,15 @@ sequenceDiagram
 function export_active_config() {
   $active_storage = \Drupal::configStorage();
   $sync_storage = \Drupal::configFactory()->getSyncStorage();
-  
+
   foreach ($active_storage->listAll() as $name) {
     $config = $active_storage->read($name);
     $sync_storage->write($name, $config);
   }
-  
+
   // 清除缓存
   \Drupal::service('cache.backend')->invalidateAll();
-  
+
   return TRUE;
 }
 ```
@@ -274,7 +274,7 @@ sequenceDiagram
     participant Active as 活动存储
     participant DB as 数据库
     participant Cache as 缓存系统
-    
+
     User->>+Drush: config:import
     Drush->>+Sync: 读取 YAML 文件
     Sync-->>-Drush: 返回配置数据
@@ -300,25 +300,25 @@ sequenceDiagram
 function import_config_from_sync() {
   $sync_storage = \Drupal::configFactory()->getSyncStorage();
   $active_storage = \Drupal::configStorage();
-  
+
   foreach ($sync_storage->listAll() as $name) {
     $sync_config = $sync_storage->read($name);
     $current_config = $active_storage->read($name);
-    
+
     // 检测差异
     if ($sync_config !== $current_config) {
       $active_storage->write($name, $sync_config);
-      
+
       // 记录变更
       \Drupal::logger('config')->info("Configuration @name updated", [
         '@name' => $name,
       ]);
     }
   }
-  
+
   // 清除缓存
   \Drupal::service('cache.backend')->invalidateAll();
-  
+
   return TRUE;
 }
 ```
@@ -338,11 +338,11 @@ function import_config_from_sync() {
  */
 function get_config($name) {
   $config = \Drupal::config($name);
-  
+
   if (!$config) {
     throw new \Exception("Configuration {$name} not found");
   }
-  
+
   return $config;
 }
 
@@ -351,11 +351,11 @@ function get_config($name) {
  */
 function get_config_value($name, $key) {
   $config = \Drupal::config($name);
-  
+
   if (!$config) {
     return NULL;
   }
-  
+
   return $config->get($key);
 }
 ```
@@ -368,7 +368,7 @@ function get_config_value($name, $key) {
 function set_config_value($name, $key, $value) {
   $config = \Drupal::configFactory()->getEditable($name);
   $config->set($key, $value)->save();
-  
+
   return TRUE;
 }
 
@@ -377,13 +377,13 @@ function set_config_value($name, $key, $value) {
  */
 function set_config_values($name, $values) {
   $config = \Drupal::configFactory()->getEditable($name);
-  
+
   foreach ($values as $key => $value) {
     $config->set($key, $value);
   }
-  
+
   $config->save();
-  
+
   return TRUE;
 }
 ```
@@ -396,7 +396,7 @@ function set_config_values($name, $values) {
 function delete_config_value($name, $key) {
   $config = \Drupal::configFactory()->getEditable($name);
   $config->delete($key)->save();
-  
+
   return TRUE;
 }
 ```
@@ -411,15 +411,15 @@ function delete_config_value($name, $key) {
 function export_active_config($export_path = 'sites/default/files/config') {
   $active_storage = \Drupal::configStorage();
   $active_config = $active_storage->listAll();
-  
+
   foreach ($active_config as $name) {
     $config = \Drupal::config($name);
     $yaml = \Drupal::service('serializer.yaml')->encode($config->getRawData());
-    
+
     $file_path = $export_path . '/' . $name . '.yml';
     file_put_contents($file_path, $yaml);
   }
-  
+
   return count($active_config);
 }
 ```
@@ -433,13 +433,13 @@ function import_config_from_file($file_path) {
   if (!file_exists($file_path)) {
     throw new \Exception("Configuration file not found: {$file_path}");
   }
-  
+
   $yml_data = \Drupal::service('serializer.yaml')->decode(file_get_contents($file_path));
   $config_name = str_replace('.yml', '', basename($file_path));
-  
+
   $config = \Drupal::configFactory()->getEditable($config_name);
   $config->setRawData($yml_data)->save();
-  
+
   return TRUE;
 }
 ```
@@ -453,7 +453,7 @@ function import_config_from_file($file_path) {
  */
 function compare_config($name, $active_value, $sync_value) {
   $diff = [];
-  
+
   if ($active_value !== $sync_value) {
     $diff = [
       'changed' => TRUE,
@@ -461,7 +461,7 @@ function compare_config($name, $active_value, $sync_value) {
       'sync' => $sync_value,
     ];
   }
-  
+
   return $diff;
 }
 
@@ -471,15 +471,15 @@ function compare_config($name, $active_value, $sync_value) {
 function check_config_dirty($name) {
   $active_storage = \Drupal::configFactory()->getStorage($name);
   $sync_storage = \Drupal::configFactory()->getSyncStorage();
-  
+
   $dirty = [];
-  
+
   foreach ($active_storage->listAll() as $key => $value) {
     if ($sync_storage->has($key) && $sync_storage->get($key) !== $value) {
       $dirty[] = $key;
     }
   }
-  
+
   return empty($dirty) ? FALSE : $dirty;
 }
 ```
@@ -508,7 +508,7 @@ function check_config_dirty($name) {
 function export_dev_config() {
   // 导出配置到 Git 仓库
   \Drupal::service('config.manager')->exportAll();
-  
+
   // 提交到 Git
   exec('git add config/sync/*');
   exec('git commit -m "Updated configuration from dev"');
@@ -525,10 +525,10 @@ function export_dev_config() {
 function import_test_config() {
   // 从 Git 拉取配置
   exec('git pull origin main');
-  
+
   // 导入配置
   \Drupal::service('config.manager')->importAll();
-  
+
   // 清除缓存
   drush('cache-rebuild');
 }
@@ -543,7 +543,7 @@ function import_test_config() {
 function import_prod_config() {
   // 检查配置差异
   $diff = \Drupal::service('config.diff_checker')->getDiff();
-  
+
   if (!empty($diff)) {
     // 显示差异
     foreach ($diff as $name => $changes) {
@@ -551,10 +551,10 @@ function import_prod_config() {
         '@name' => $name,
       ]);
     }
-    
+
     // 确认导入
     $confirm = \Drupal::service('ask.confirmation')->ask('Import configuration?');
-    
+
     if ($confirm) {
       // 导入配置
       \Drupal::service('config.manager')->importAll();
@@ -591,25 +591,25 @@ function import_prod_config() {
  */
 function analyze_config_dependencies($config_name) {
   $config = \Drupal::configFactory()->get($config_name);
-  
+
   if (!$config) {
     return [];
   }
-  
+
   $dependencies = $config->get('dependencies', []);
-  
+
   // 处理配置依赖
   $config_deps = $dependencies['config'] ?? [];
   $module_deps = $dependencies['module'] ?? [];
-  
+
   $all_deps = array_merge($config_deps, $module_deps);
-  
+
   // 递归分析依赖
   foreach ($config_deps as $dep_config) {
     $sub_deps = analyze_config_dependencies($dep_config);
     $all_deps = array_merge($all_deps, $sub_deps);
   }
-  
+
   return array_unique($all_deps);
 }
 ```
@@ -622,16 +622,16 @@ function analyze_config_dependencies($config_name) {
  */
 function import_config_by_dependencies($config_names) {
   $dependency_map = [];
-  
+
   // 构建依赖图
   foreach ($config_names as $config_name) {
     $deps = analyze_config_dependencies($config_name);
     $dependency_map[$config_name] = $deps;
   }
-  
+
   // 拓扑排序
   $sorted = topological_sort($dependency_map);
-  
+
   // 按顺序导入
   foreach ($sorted as $config_name) {
     \Drupal::service('config.manager')->importSingle($config_name);
@@ -644,27 +644,27 @@ function import_config_by_dependencies($config_names) {
 function topological_sort($graph) {
   $visited = [];
   $result = [];
-  
+
   $dfs = function($node) use (&$graph, &$visited, &$result, &$dfs) {
     if (isset($visited[$node])) {
       return;
     }
-    
+
     $visited[$node] = TRUE;
-    
+
     foreach ($graph[$node] as $dependency) {
       if (isset($graph[$dependency])) {
         $dfs($dependency);
       }
     }
-    
+
     $result[] = $node;
   };
-  
+
   foreach ($graph as $node => $_) {
     $dfs($node);
   }
-  
+
   return array_reverse($result);
 }
 ```
@@ -677,27 +677,27 @@ function topological_sort($graph) {
  */
 function check_config_dependencies_satisfied($config_name) {
   $config = \Drupal::configFactory()->get($config_name);
-  
+
   if (!$config) {
     return FALSE;
   }
-  
+
   $dependencies = $config->get('dependencies', []);
-  
+
   // 检查配置依赖
   foreach ($dependencies['config'] ?? [] as $dep_config) {
     if (!$config = \Drupal::configFactory()->getEditable($dep_config)) {
       return FALSE;
     }
   }
-  
+
   // 检查模块依赖
   foreach ($dependencies['module'] ?? [] as $module) {
     if (!\Drupal::moduleHandler()->moduleExists($module)) {
       return FALSE;
     }
   }
-  
+
   return TRUE;
 }
 ```
@@ -751,10 +751,10 @@ chmod +x .git/hooks/post-commit
  * 配置版本管理器
  */
 class ConfigVersionManager {
-  
+
   protected $storage;
   protected $sync_storage;
-  
+
   public function __construct(
     ConfigStorageInterface $storage,
     ConfigStorageInterface $sync_storage
@@ -762,17 +762,17 @@ class ConfigVersionManager {
     $this->storage = $storage;
     $this->sync_storage = $sync_storage;
   }
-  
+
   /**
    * 创建配置版本
    */
   public function create_version($message, $author = NULL) {
     $timestamp = \Drupal::time()->getRequestTime();
     $author = $author ?: \Drupal::currentUser()->getAccountName();
-    
+
     // 导出配置
     $this->export_config();
-    
+
     // 创建 Git 提交
     $commit_data = [
       'message' => $message,
@@ -780,65 +780,65 @@ class ConfigVersionManager {
       'timestamp' => $timestamp,
       'configs' => array_keys($this->sync_storage->listAll()),
     ];
-    
+
     $version_file = \Drupal::service('file.system')
       ->realpath('sites/default/files/config_versions') . '/' . $timestamp . '.json';
-    
+
     file_put_contents($version_file, json_encode($commit_data, JSON_PRETTY_PRINT));
-    
+
     // 提交到 Git
     exec('cd ' . DRUPAL_ROOT . ' && git add config/sync/ && git commit -m "' . $message . ' #version-' . $timestamp . '"');
-    
+
     return $timestamp;
   }
-  
+
   /**
    * 回滚到指定版本
    */
   public function rollback_to_version($timestamp) {
     $version_file = \Drupal::service('file.system')
       ->realpath('sites/default/files/config_versions') . '/' . $timestamp . '.json';
-    
+
     if (!file_exists($version_file)) {
       throw new \Exception("Version not found: {$timestamp}");
     }
-    
+
     $version_data = json_decode(file_get_contents($version_file), TRUE);
-    
+
     // 恢复配置
     foreach ($version_data['configs'] as $config_name) {
       $config = $this->sync_storage->get($config_name);
       $this->storage->write($config_name, $config);
     }
-    
+
     // 清除缓存
     \Drupal::service('cache.backend')->invalidateAll();
-    
+
     return TRUE;
   }
-  
+
   /**
    * 列出所有版本
    */
   public function list_versions() {
     $version_dir = \Drupal::service('file.system')
       ->realpath('sites/default/files/config_versions');
-    
+
     if (!dir_access($version_dir)) {
       return [];
     }
-    
+
     $files = glob($version_dir . '/*.json');
     $versions = [];
-    
+
     foreach ($files as $file) {
       $data = json_decode(file_get_contents($file), TRUE);
       $versions[] = $data;
     }
-    
+
     return array_reverse($versions);
   }
-  
+
   protected function export_config() {
     foreach ($this->storage->listAll() as $name) {
       $this->sync_storage->write($name, $this->storage->read($name));
@@ -854,7 +854,7 @@ class ConfigVersionManager {
  * 配置回滚 Command
  */
 class ConfigRollbackCommands extends DrushCommands {
-  
+
   /**
    * 列出配置版本
    *
@@ -863,7 +863,7 @@ class ConfigRollbackCommands extends DrushCommands {
   public function listVersions() {
     $version_manager = \Drupal::service('config.version_manager');
     $versions = $version_manager->list_versions();
-    
+
     $rows = [];
     foreach ($versions as $version) {
       $rows[] = [
@@ -873,10 +873,10 @@ class ConfigRollbackCommands extends DrushCommands {
         'Configs' => count($version['configs']),
       ];
     }
-    
+
     return $rows;
   }
-  
+
   /**
    * 回滚到指定版本
    *
@@ -885,7 +885,7 @@ class ConfigRollbackCommands extends DrushCommands {
    */
   public function rollback($version) {
     $version_manager = \Drupal::service('config.version_manager');
-    
+
     try {
       $version_manager->rollback_to_version($version);
       $this->logger('config')->success("Configuration rolled back to version @version", ['@version' => $version]);
@@ -925,24 +925,24 @@ erDiagram
         date created "创建时间"
         date changed "修改时间"
     }
-    
+
     CONFIG_DEPENDENCY {
         string type "依赖类型"
         string name "依赖标识符"
     }
-    
+
     CONFIG_VERSION {
         string version_id "版本 ID"
         date timestamp "时间戳"
         string author "作者"
         string message "消息"
     }
-    
+
     MODULE {
         string name "模块名称"
         string status "状态"
     }
-    
+
     CONFIG_ENTITY ||--o{ CONFIG_DEPENDENCY : "依赖于"
     CONFIG_ENTITY ||--o{ CONFIG_VERSION : "版本历史"
     MODULE ||--o{ CONFIG_ENTITY : "提供配置"
@@ -990,7 +990,7 @@ erDiagram
    node.type.article
    field.storage.node.body
    views.view.recent_posts
-   
+
    # ❌ 避免：缩写导致混淆
    node.type.art
    nod.field.body
@@ -1027,7 +1027,7 @@ erDiagram
    \Drupal::database()->insert('key_value')
      ->fields(['name' => 'system.site', 'value' => $data])
      ->execute();
-   
+
    // ✅ 好：使用配置 API
    \Drupal::configFactory()->getEditable('system.site')
      ->set('name', '新名称')
@@ -1038,7 +1038,7 @@ erDiagram
    ```php
    // ❌ 避免：忽略依赖
    $config->set('status', TRUE)->save();
-   
+
    // ✅ 好：检查依赖
    if ($this->checkDependencies($config)) {
      $config->set('status', TRUE)->save();
@@ -1049,7 +1049,7 @@ erDiagram
    ```php
    // ❌ 避免：禁用配置缓存
    $config->set('cache', FALSE)->save();
-   
+
    // ✅ 好：合理使用缓存
    $config->set('cache', TRUE)->save();
    ```
@@ -1066,7 +1066,7 @@ erDiagram
    # ❌ 避免：不检查差异
    drush cr
    # 直接使用
-   
+
    # ✅ 好：先检查差异
    drush config:diff
    # 查看差异后再导入
@@ -1106,7 +1106,7 @@ erDiagram
 ## 📊 常见问题 (FAQ)
 
 ### Q1: 配置导入失败怎么办？
-**A**: 
+**A**:
 - 检查配置依赖
 - 检查文件权限
 - 查看错误日志
@@ -1125,7 +1125,7 @@ drush config:import node.type.article
 ```
 
 ### Q2: 如何回滚配置？
-**A**: 
+**A**:
 ```bash
 # 使用配置文件恢复
 drush config:rollback node.type.product
@@ -1135,19 +1135,19 @@ drush config:rollback --to=2026-04-07-1540
 ```
 
 ### Q3: 如何删除配置？
-**A**: 
+**A**:
 ```bash
 drush config:delete node.type.product
 ```
 
 ### Q4: 如何查看配置历史？
-**A**: 
+**A**:
 ```bash
 drush config:history
 ```
 
 ### Q5: 如何同步两个站点的配置？
-**A**: 
+**A**:
 ```bash
 # 导出配置
 drush config:export /tmp/sync
@@ -1184,10 +1184,10 @@ drush config:import
 
 ---
 
-**文档版本**: v2.0  
-**状态**: 活跃维护  
-**最后更新**: 2026-04-07  
-**维护**: OpenClaw  
+**文档版本**: v2.0
+**状态**: 活跃维护
+**最后更新**: 2026-04-07
+**维护**: OpenClaw
 
 *所有技术信息基于 Drupal.org 官方文档和实际项目经验*
 *所有 ER 图经过三重 Mermaid 语法检查*
@@ -1195,6 +1195,6 @@ drush config:import
 
 ---
 
-*下一篇*: [Entity 实体系统](core-modules/06-entity.md)  
-*返回*: [核心模块索引](core-modules/00-index.md)  
+*下一篇*: [Entity 实体系统](core-modules/06-entity.md)
+*返回*: [核心模块索引](core-modules/00-index.md)
 *上一篇*: [Views 查询系统](core-modules/05-views.md)

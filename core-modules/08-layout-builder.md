@@ -5,10 +5,10 @@ description: Complete guide to Drupal Layout Builder. Covers layout creation, bl
 
 # Drupal Layout Builder 布局系统完整指南
 
-**版本**: v1.0  
-**Drupal 版本**: 11.x  
-**状态**: 活跃维护  
-**更新时间**: 2026-04-05  
+**版本**: v1.0
+**Drupal 版本**: 11.x
+**状态**: 活跃维护
+**更新时间**: 2026-04-05
 
 ---
 
@@ -214,7 +214,7 @@ function create_block_condition($condition_type, $settings) {
     'settings' => $settings,
     'label' => $settings['label'] ?? $condition_type,
   ];
-  
+
   return $condition;
 }
 
@@ -223,15 +223,15 @@ function create_block_condition($condition_type, $settings) {
  */
 function block_display_condition($block, $page) {
   $conditions = $block->getConditionList();
-  
+
   foreach ($conditions as $condition) {
     $handler = \Drupal::service($condition['plugin']);
-    
+
     if (!$handler->access($page)) {
       return FALSE;
     }
   }
-  
+
   return TRUE;
 }
 ```
@@ -253,9 +253,9 @@ function create_layout_block($block_type, $label, $region, $weight = 0) {
     'info' => $label,
     'langcode' => \Drupal::languageManager()->getDefaultLanguage()->getId(),
   ]);
-  
+
   $block_content->save();
-  
+
   // 创建区块实例
   $block = \Drupal::entityTypeManager()->getStorage('block')->create([
     'plugin' => $block_type,
@@ -266,9 +266,9 @@ function create_layout_block($block_type, $label, $region, $weight = 0) {
     'status' => TRUE,
     'data' => [],
   ]);
-  
+
   $block->save();
-  
+
   return $block;
 }
 
@@ -283,18 +283,18 @@ $block = create_layout_block('block_content:basic', 'My Custom Block', 'sidebar'
  */
 function update_layout_block($block_id, $settings) {
   $block = \Drupal::entityTypeManager()->getStorage('block')->load($block_id);
-  
+
   if (!$block) {
     throw new \Exception("Block {$block_id} not found");
   }
-  
+
   // 更新区块设置
   foreach ($settings as $key => $value) {
     $block->set($key, $value);
   }
-  
+
   $block->save();
-  
+
   return TRUE;
 }
 
@@ -303,13 +303,13 @@ function update_layout_block($block_id, $settings) {
  */
 function remove_layout_block($block_id) {
   $block = \Drupal::entityTypeManager()->getStorage('block')->load($block_id);
-  
+
   if (!$block) {
     return FALSE;
   }
-  
+
   $block->delete();
-  
+
   return TRUE;
 }
 ```
@@ -328,9 +328,9 @@ function create_page_layout($node_type, $layout_name) {
     'mode' => 'layout_builder',
     'weight' => 1,
   ]);
-  
+
   $display->save();
-  
+
   // 设置布局
   $display->set('settings', [
     'layout_builder_enabled' => TRUE,
@@ -347,9 +347,9 @@ function create_page_layout($node_type, $layout_name) {
       ],
     ],
   ]);
-  
+
   $display->save();
-  
+
   return $display->id();
 }
 ```
@@ -361,15 +361,15 @@ function create_page_layout($node_type, $layout_name) {
  */
 function add_layout_component($entity_id, $component) {
   $entity_view_display = \Drupal::entityTypeManager()->getStorage('entity_view_display')->load('node.article.layout_builder');
-  
+
   $layout_overrides = $entity_view_display->get('settings.layout_overrides');
-  
+
   // 添加组件
   $layout_overrides['layout']['components'][] = $component;
-  
+
   $entity_view_display->set('settings.layout_overrides', $layout_overrides);
   $entity_view_display->save();
-  
+
   return TRUE;
 }
 
@@ -378,9 +378,9 @@ function add_layout_component($entity_id, $component) {
  */
 function update_layout_component($entity_id, $component_uuid, $new_component) {
   $entity_view_display = \Drupal::entityTypeManager()->getStorage('entity_view_display')->load('node.article.layout_builder');
-  
+
   $layout_overrides = $entity_view_display->get('settings.layout_overrides');
-  
+
   // 查找并替换组件
   foreach ($layout_overrides['layout']['components'] as $key => $component) {
     if ($component['uuid'] === $component_uuid) {
@@ -388,10 +388,10 @@ function update_layout_component($entity_id, $component_uuid, $new_component) {
       break;
     }
   }
-  
+
   $entity_view_display->set('settings.layout_overrides', $layout_overrides);
   $entity_view_display->save();
-  
+
   return TRUE;
 }
 ```
@@ -410,7 +410,7 @@ function define_region($region_id, $settings) {
     'weight' => $settings['weight'] ?? 0,
     'template' => $settings['template'] ?? 'region--' . $region_id . '.html.twig',
   ];
-  
+
   return $region;
 }
 
@@ -419,23 +419,23 @@ function define_region($region_id, $settings) {
  */
 function get_layout_regions($display_mode = 'full') {
   $entity_display = \Drupal::entityTypeManager()->getStorage('entity_view_display')->load('node.article.' . $display_mode);
-  
+
   if (!$entity_display) {
     return [];
   }
-  
+
   $layout_overrides = $entity_display->get('settings.layout_overrides');
-  
+
   if (!isset($layout_overrides[$display_mode])) {
     return [];
   }
-  
+
   $layout = $layout_overrides[$display_mode]['layout_id'];
-  
+
   // 获取布局类型定义的 region
   $layout_plugin = \Drupal::service('plugin.manager.layout')->createInstance($layout);
   $regions = $layout_plugin->getRegions();
-  
+
   return $regions;
 }
 ```
@@ -447,18 +447,18 @@ function get_layout_regions($display_mode = 'full') {
  */
 function render_region($region_id, $block_ids) {
   $output = '<div class="region ' . $region_id . '">';
-  
+
   foreach ($block_ids as $block_id) {
     $block = \Drupal::entityTypeManager()->getStorage('block')->load($block_id);
-    
+
     if ($block && $block->getRegion() === $region_id && $block->getVisible()) {
       $block_view = \Drupal::service('rendering').render($block);
       $output .= $block_view;
     }
   }
-  
+
   $output .= '</div>';
-  
+
   return $output;
 }
 
@@ -467,19 +467,19 @@ function render_region($region_id, $block_ids) {
  */
 function render_full_layout($entity_id, $display_mode) {
   $entity = \Drupal::entityTypeManager()->getStorage('node')->load($entity_id);
-  
+
   // 获取布局构建器视图
   $display = \Drupal::entityTypeManager()->getStorage('entity_view_display')
     ->load('node.' . $entity->getType() . '.layout_builder');
-  
+
   if (!$display) {
     return '';
   }
-  
+
   // 渲染布局
   $view_builder = \Drupal::service('entity.view_builder');
   $build = $view_builder->build($entity, $display_mode, 'layout_builder');
-  
+
   return \Drupal::service('renderer')->renderRoot($build);
 }
 ```
@@ -505,13 +505,13 @@ patterns:
     regions:
       - content
       - call_to_action
-  
+
   - name: 'content_columns'
     template: 'columns-layout.html.twig'
     regions:
       - left_column
       - right_column
-  
+
   - name: 'footer_area'
     template: 'footer-layout.html.twig'
     regions:
@@ -531,16 +531,16 @@ function optimize_layout_rendering($entity_id, $display_mode) {
   $entity_view_display = \Drupal::entityTypeManager()
     ->getStorage('entity_view_display')
     ->load('node.article.layout_builder');
-  
+
   if ($entity_view_display) {
     $settings = $entity_view_display->get('settings');
-    
+
     // 确保启用缓存
     $settings['cache'] = [
       'max-age' => 3600,
       'tags' => ['layout_builder'],
     ];
-    
+
     $entity_view_display->set('settings', $settings);
     $entity_view_display->save();
   }
@@ -551,7 +551,7 @@ function optimize_layout_rendering($entity_id, $display_mode) {
  */
 function optimize_block_caching($block_id) {
   $block = \Drupal::entityTypeManager()->getStorage('block')->load($block_id);
-  
+
   if ($block) {
     // 设置缓存标签
     $block->setCacheTags(['layout_builder']);
@@ -570,11 +570,11 @@ function optimize_block_caching($block_id) {
  */
 function check_block_permission($block_id, $account) {
   $block = \Drupal::entityTypeManager()->getStorage('block')->load($block_id);
-  
+
   if (!$block) {
     return FALSE;
   }
-  
+
   return $block->access('view', $account);
 }
 
@@ -583,14 +583,14 @@ function check_block_permission($block_id, $account) {
  */
 function filter_safe_blocks($blocks) {
   $safe_blocks = [];
-  
+
   foreach ($blocks as $block) {
     // 检查区块权限
     if ($block->access('execute')) {
       $safe_blocks[] = $block;
     }
   }
-  
+
   return $safe_blocks;
 }
 ```
@@ -600,31 +600,31 @@ function filter_safe_blocks($blocks) {
 ## 📊 常见问题 (FAQ)
 
 ### Q1: 如何创建自定义布局?
-**A**: 
+**A**:
 - 使用布局构建器
 - 定义自定义区域
 - 创建布局模板
 
 ### Q2: 如何禁用特定区块?
-**A**: 
+**A**:
 - 在区块配置中设置可见性
 - 通过权限控制
 - 删除区块实例
 
 ### Q3: 如何优化布局性能?
-**A**: 
+**A**:
 - 启用缓存
 - 减少区块数量
 - 优化模板文件
 
 ### Q4: 如何调试布局问题?
-**A**: 
+**A**:
 - 启用布局构建器调试模式
 - 检查区块可见性
 - 验证区域配置
 
 ### Q5: 如何迁移布局?
-**A**: 
+**A**:
 - 导出布局配置
 - 使用配置管理器
 - 导入布局设置
@@ -648,12 +648,12 @@ function filter_safe_blocks($blocks) {
 
 ---
 
-**文档版本**: v1.0  
-**状态**: 活跃维护  
+**文档版本**: v1.0
+**状态**: 活跃维护
 **最后更新**: 2026-04-05
 
 ---
 
-*下一篇*: [Media 媒体系统](core-modules/08-media.md)  
-*返回*: [核心模块索引](core-modules/00-index.md)  
+*下一篇*: [Media 媒体系统](core-modules/08-media.md)
+*返回*: [核心模块索引](core-modules/00-index.md)
 *上一篇*: [Entity 实体系统](core-modules/06-entity.md)

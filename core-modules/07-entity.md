@@ -5,10 +5,10 @@ description: Complete guide to Drupal Entity System. Covers entity types, bundle
 
 # Drupal Entity 实体系统完整指南
 
-**版本**: v2.0  
-**Drupal 版本**: 11.x, 12.x  
-**状态**: 活跃维护  
-**更新时间**: 2026-04-07  
+**版本**: v2.0
+**Drupal 版本**: 11.x, 12.x
+**状态**: 活跃维护
+**更新时间**: 2026-04-07
 
 ---
 
@@ -212,7 +212,7 @@ sequenceDiagram
     participant Storage as 实体存储
     participant DB as 数据库
     participant Cache as 缓存
-    
+
     User->>+Form: 提交创建表单
     Form->>+Entity: create([title => '新文章'])
     Entity->>+Storage: validate()
@@ -220,7 +220,7 @@ sequenceDiagram
     DB-->>-Storage: 通过
     Storage-->>-Entity: 验证通过
     Entity->>-Form: 返回实体对象
-    
+
     Form->>+Entity: save()
     Entity->>+Storage: insert()
     Storage->>+DB: 插入主表
@@ -275,18 +275,18 @@ sequenceDiagram
     participant DB as 数据库
     participant Loader as 实体加载器
     participant Cache as 缓存
-    
+
     User->>+Query: createQuery()
     Query->>+Query: condition('status', 1)
     Query->>+Query: sort('created', 'DESC')
     Query->>-User: 返回查询对象
-    
+
     User->>+Query: execute()
     Query->>+Storage: loadEntityIds()
     Query->>+DB: SELECT id FROM {node} WHERE status=1
     DB-->>-Query: [123, 456, 789]
     Query->>-Storage: 返回 ID 列表
-    
+
     Storage->>+Loader: loadMultiple([123, 456, 789])
     Loader->>+Cache: 检查缓存
     Cache--|未命中 |-Loader: 查询数据库
@@ -340,35 +340,35 @@ interface EntityInterface {
   public function getEntityType();
   public function bundle();
   public function label();
-  
+
   // 时间戳
   public function created();
   public function changed();
   public function getRevisionCreationTime();
   public function setRevisionCreationTime($timestamp);
-  
+
   // 修订版本
   public function getRevisionId();
   public function isRevisionId($revision_id);
   public function getRevisionUser();
   public function getRevision();
-  
+
   // 多语言
   public function isTranslatable();
   public function hasTranslation($langcode);
   public function getTranslation($langcode = NULL);
-  
+
   // 字段操作
   public function hasField($field_name);
   public function get($field_name);
   public function set($field_name, $value);
   public function setField($field_name, $value);
-  
+
   // 缓存
   public function getCacheTags();
   public function getCacheContexts();
   public function getCacheMaxAge();
-  
+
   // 生命周期
   public function save();
   public function delete();
@@ -436,7 +436,7 @@ function create_entity($entity_type, $values) {
   $entity = \Drupal::entityTypeManager()
     ->getStorage($entity_type)
     ->create($values);
-  
+
   return $entity;
 }
 
@@ -478,7 +478,7 @@ function load_entities($entity_type, array $entity_ids) {
   $entities = \Drupal::entityTypeManager()
     ->getStorage($entity_type)
     ->loadMultiple($entity_ids);
-  
+
   return $entities ?: [];
 }
 
@@ -499,19 +499,19 @@ function update_entity($entity_type, $entity_id, array $values) {
   $entity = \Drupal::entityTypeManager()
     ->getStorage($entity_type)
     ->load($entity_id);
-  
+
   if (!$entity) {
     throw new \Exception("Entity {$entity_id} not found");
   }
-  
+
   // 设置字段（不自动保存）
   foreach ($values as $field => $value) {
     $entity->set($field, $value);
   }
-  
+
   // 手动保存
   $entity->save();
-  
+
   return TRUE;
 }
 
@@ -533,11 +533,11 @@ function delete_entity($entity_type, $entity_id, $soft_delete = FALSE) {
   $entity = \Drupal::entityTypeManager()
     ->getStorage($entity_type)
     ->load($entity_id);
-  
+
   if (!$entity) {
     return FALSE;
   }
-  
+
   if ($soft_delete) {
     // 软删除：只更新状态
     $entity->set('status', 0);
@@ -546,7 +546,7 @@ function delete_entity($entity_type, $entity_id, $soft_delete = FALSE) {
     // 硬删除：彻底删除
     $entity->delete();
   }
-  
+
   return TRUE;
 }
 ```
@@ -561,16 +561,16 @@ function delete_entity($entity_type, $entity_id, $soft_delete = FALSE) {
  */
 function execute_entity_query($entity_type, $conditions = []) {
   $query = \Drupal::entityTypeManager()->getQuery($entity_type);
-  
+
   // 状态过滤
   $query->condition('status', 1);
-  
+
   // 访问控制
   $query->accessCheck(TRUE);
-  
+
   // 执行查询
   $ids = $query->execute();
-  
+
   // 返回实体列表
   return \Drupal::entityTypeManager()
     ->getStorage($entity_type)
@@ -592,17 +592,17 @@ $articles = execute_entity_query('node', [
  */
 function complex_entity_query($entity_type, $options) {
   $query = \Drupal::entityTypeManager()->getQuery($entity_type);
-  
+
   // 类型过滤
   if (!empty($options['type'])) {
     $query->condition('type', $options['type']);
   }
-  
+
   // 状态过滤
   if (isset($options['status'])) {
     $query->condition('status', $options['status']);
   }
-  
+
   // 多字段 OR 查询
   if (!empty($options['or_conditions'])) {
     $or = \Drupal::database()->orConditionGroup();
@@ -611,20 +611,20 @@ function complex_entity_query($entity_type, $options) {
     }
     $query->condition($or);
   }
-  
+
   // 排序
   if (!empty($options['sort_field'])) {
     $query->sort($options['sort_field'], $options['sort_order'] ?? 'DESC');
   }
-  
+
   // 分页
   $limit = $options['limit'] ?? 50;
   $offset = $options['offset'] ?? 0;
   $query->range($offset, $limit);
-  
+
   // 执行查询+加载
   $ids = $query->execute();
-  
+
   return \Drupal::entityTypeManager()
     ->getStorage($entity_type)
     ->loadMultiple($ids);
@@ -640,16 +640,16 @@ function complex_entity_query($entity_type, $options) {
 function get_entity_revisions($entity_type, $entity_id) {
   $storage = \Drupal::entityTypeManager()
     ->getStorage($entity_type);
-  
+
   // 获取所有修订 ID
   $revision_ids = $storage->getQuery()
     ->condition('vid', $entity_id, '>')
     ->sort('vid', 'DESC')
     ->execute();
-  
+
   // 加载修订版本
   $revisions = $storage->loadRevisionMultiple($revision_ids);
-  
+
   return $revisions;
 }
 
@@ -669,19 +669,19 @@ function get_entity_field($entity_type, $entity_id, $field_name) {
   $entity = \Drupal::entityTypeManager()
     ->getStorage($entity_type)
     ->load($entity_id);
-  
+
   if (!$entity || !$entity->hasField($field_name)) {
     return NULL;
   }
-  
+
   $field_items = $entity->get($field_name);
-  
+
   // 处理多值字段
   $values = [];
   foreach ($field_items as $delta => $item) {
     $values[$delta] = $item->value ?? $item;
   }
-  
+
   // 单值字段返回单个值，多值返回数组
   return count($values) === 1 ? reset($values) : $values;
 }
@@ -701,14 +701,14 @@ function set_entity_field($entity_type, $entity_id, $field_name, $value) {
   $entity = \Drupal::entityTypeManager()
     ->getStorage($entity_type)
     ->load($entity_id);
-  
+
   if (!$entity || !$entity->hasField($field_name)) {
     throw new \Exception("Entity does not have field {$field_name}");
   }
-  
+
   $entity->set($field_name, $value);
   $entity->save();
-  
+
   return TRUE;
 }
 
@@ -725,11 +725,11 @@ entity_field_set('product', 456, 'field_status', 'active');
 function get_field_definition($entity_type, $field_name) {
   $entity_type_obj = \Drupal::entityTypeManager()
     ->getDefinition($entity_type);
-  
+
   if (!$entity_type_obj->isFieldable()) {
     throw new \Exception("Entity type {$entity_type} is not fieldable");
   }
-  
+
   return \Drupal::entityTypeManager()
     ->getStorage('field_field')
     ->load("{$entity_type}.{$field_name}");
@@ -804,7 +804,7 @@ function my_module_install() {
     ],
   ]);
   $field->save();
-  
+
   // 创建库存字段
   $field = FieldStorageConfig::create([
     'field_name' => 'field_product_stock',
@@ -813,7 +813,7 @@ function my_module_install() {
     'settings' => [],
   ]);
   $field->save();
-  
+
   // 创建图片字段
   $field = FieldStorageConfig::create([
     'field_name' => 'field_product_image',
@@ -841,7 +841,7 @@ function get_low_stock_products($threshold = 10) {
     ->condition('field_product_stock', $threshold, '<')
     ->condition('status', 1)
     ->execute();
-  
+
   return \Drupal::entityTypeManager()
     ->getStorage('product')
     ->loadMultiple($product_ids);
@@ -854,7 +854,7 @@ function get_products_with_prices() {
   $products = \Drupal::entityTypeManager()
     ->getStorage('product')
     ->loadMultiple();
-  
+
   $result = [];
   foreach ($products as $product) {
     $price = $product->get('field_product_price')->value;
@@ -864,7 +864,7 @@ function get_products_with_prices() {
       'stock' => $product->get('field_product_stock')->value,
     ];
   }
-  
+
   return $result;
 }
 ```
@@ -904,7 +904,7 @@ function my_module_install() {
     'required' => FALSE,
   ]);
   $field->save();
-  
+
   // 创建标签字段（多值）
   $field = FieldStorageConfig::create([
     'field_name' => 'field_tags',
@@ -917,7 +917,7 @@ function my_module_install() {
     'required' => FALSE,
   ]);
   $field->save();
-  
+
   // 创建设置字段到节点类型
   $instance = FieldConfig::create([
     'field_name' => 'field_author',
@@ -950,9 +950,9 @@ function get_articles_with_tag($term_id) {
   $query->condition('field_tags.target_id', $term_id);
   $query->condition('type', 'article');
   $query->condition('status', 1);
-  
+
   $nids = $query->execute();
-  
+
   return \Drupal::entityTypeManager()
     ->getStorage('node')
     ->loadMultiple($nids);
@@ -984,7 +984,7 @@ function get_articles_with_tag($term_id) {
 function my_module_init() {
   $storage = \Drupal::entityTypeManager()->getStorage('node');
   $node_type = $storage->getType('article');
-  
+
   // 允许修订（默认已启用）
   $node_type->set('lock' => FALSE)
     ->set('revisionable' => TRUE)
@@ -1003,21 +1003,21 @@ function create_revision($node_id, $changes) {
   $node = \Drupal::entityTypeManager()
     ->getStorage('node')
     ->load($node_id);
-  
+
   if (!$node) {
     throw new \Exception("Node {$node_id} not found");
   }
-  
+
   // 保存当前版本（自动创建修订）
   $node->save(TRUE);
-  
+
   // 获取最新修订 ID
   $revision_id = $node->getRevisionId();
-  
+
   // 设置修改信息
   $node->setRevisionLogMessage('更新内容：' . implode(', ', array_keys($changes)));
   $node->save(TRUE);
-  
+
   return $revision_id;
 }
 
@@ -1028,21 +1028,21 @@ function restore_revision($node_id, $revision_id) {
   $node = \Drupal::entityTypeManager()
     ->getStorage('node')
     ->load($node_id);
-  
+
   if (!$node) {
     throw new \Exception("Node {$node_id} not found");
   }
-  
+
   // 加载修订版本
   $revision = $node->getRevision($revision_id);
-  
+
   // 复制修订内容到当前实体
   $node->copyFromRevision($revision);
-  
+
   // 设置修订日志
   $node->setRevisionLogMessage("恢复至修订 {$revision_id}");
   $node->save(TRUE);
-  
+
   return TRUE;
 }
 
@@ -1053,11 +1053,11 @@ function get_revision_list($node_id) {
   $node = \Drupal::entityTypeManager()
     ->getStorage('node')
     ->load($node_id);
-  
+
   if (!$node) {
     return [];
   }
-  
+
   // 获取所有修订 ID
   $revision_ids = \Drupal::entityTypeManager()
     ->getStorage('node')
@@ -1066,12 +1066,12 @@ function get_revision_list($node_id) {
     ->condition('vid', 1, '>')
     ->sort('vid', 'DESC')
     ->execute();
-  
+
   // 加载修订版本
   $revisions = \Drupal::entityTypeManager()
     ->getStorage('node')
     ->loadRevisionMultiple($revision_ids);
-  
+
   return $revisions;
 }
 ```
@@ -1191,7 +1191,7 @@ erDiagram
    ```php
    // ❌ 避免：硬编码 ID
    $user_id = 123;
-   
+
    // ✅ 好：使用字段
    $user_id = $node->get('field_author')->value;
    ```
@@ -1202,7 +1202,7 @@ erDiagram
    for ($i = 0; $i < 100; $i++) {
      load_entity('node', $id);
    }
-   
+
    // ✅ 好：使用缓存
    $cache = \Drupal::cache('entity');
    $cached = $cache->get("node:$id");
@@ -1212,7 +1212,7 @@ erDiagram
    ```php
    // ❌ 避免：不验证
    $node->set('title', $_POST['title']);
-   
+
    // ✅ 好：验证输入
    $title = trim($_POST['title']);
    if (strlen($title) > 255) {
@@ -1224,7 +1224,7 @@ erDiagram
    ```php
    // ❌ 避免：不检查权限
    $node = load_entity('node', $id);
-   
+
    // ✅ 好：检查权限
    if (!$node->access('view')) {
      throw new \AccessDeniedException();
@@ -1277,42 +1277,42 @@ erDiagram
 ## 📊 常见问题 (FAQ)
 
 ### Q1: 如何创建自定义实体？
-**A**: 
+**A**:
 - 使用 Entity API 创建实体类型定义类
 - 实现 ContentEntityType 接口
 - 定义实体键（id, label, uuid）
 - 配置实体链接和权限
 
 ### Q2: 实体性能优化？
-**A**: 
+**A**:
 - 使用批量加载（loadMultiple）
 - 启用实体缓存
 - 优化查询条件和排序
 - 避免过度加载字段数据
 
 ### Q3: 如何处理实体版本？
-**A**: 
+**A**:
 - 检查实体是否支持修订（revisionable）
 - 使用 save(TRUE) 创建修订
 - 使用 getRevision() 加载历史
 - 使用 copyFromRevision() 恢复
 
 ### Q4: 如何迁移实体？
-**A**: 
+**A**:
 - 使用 Migrate 模块
 - 批量导入导出实体数据
 - 保持 ID 映射关系
 - 使用 Field Data 迁移
 
 ### Q5: 如何处理实体权限？
-**A**: 
+**A**:
 - 实现 EntityAccessControlHandler
 - 配置 CRUD 权限
 - 检查用户访问权限
 - 使用 access() 方法
 
 ### Q6: Entity 和 Config Entity 有什么区别？
-**A**: 
+**A**:
 - **Content Entity**: 用户创建的内容（如 node）
 - **Config Entity**: 系统配置（如 view）
 - Config Entity 支持导出/导入
@@ -1349,10 +1349,10 @@ erDiagram
 
 ---
 
-**文档版本**: v2.0  
-**状态**: 活跃维护  
-**最后更新**: 2026-04-07  
-**维护**: OpenClaw  
+**文档版本**: v2.0
+**状态**: 活跃维护
+**最后更新**: 2026-04-07
+**维护**: OpenClaw
 
 *所有技术信息基于 Drupal.org 官方文档和实际项目经验*
 *所有 ER 图经过三重 Mermaid 语法检查*
@@ -1360,6 +1360,6 @@ erDiagram
 
 ---
 
-*下一篇*: [Layout Builder 布局系统](core-modules/07-layout-builder.md)  
-*返回*: [核心模块索引](core-modules/00-index.md)  
+*下一篇*: [Layout Builder 布局系统](core-modules/07-layout-builder.md)
+*返回*: [核心模块索引](core-modules/00-index.md)
 *上一篇*: [Configuration 配置系统](core-modules/05-config.md)

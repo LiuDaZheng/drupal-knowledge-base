@@ -5,10 +5,10 @@ description: Complete guide to Drupal Media System. Covers media types, media li
 
 # Drupal Media 媒体系统完整指南
 
-**版本**: v2.0  
-**Drupal 版本**: 11.x, 12.x  
-**状态**: 活跃维护  
-**更新时间**: 2026-04-07  
+**版本**: v2.0
+**Drupal 版本**: 11.x, 12.x
+**状态**: 活跃维护
+**更新时间**: 2026-04-07
 
 ---
 
@@ -106,7 +106,7 @@ media.type.image:
   description: 'Use images to represent images.'
   base_field_provider: '\Drupal\media\Entity\MediaType'
   field_provider: '\Drupal\media\Entity\MediaType'
-  
+
   field_config:
     field_media_image:
       id: field_media_image
@@ -154,7 +154,7 @@ sequenceDiagram
     participant FileAPI as File API
     participant DB as 数据库
     participant Cache as 缓存
-    
+
     User->>+UI: 上传文件
     UI->>+FileAPI: 验证文件类型和大小
     FileAPI-->>-UI: 验证通过
@@ -175,19 +175,19 @@ sequenceDiagram
  */
 function upload_media_file($file_source, $media_type) {
   $file = \Drupal::file()->load($file_source);
-  
+
   if (!$file) {
     throw new \Exception("File not found");
   }
-  
+
   // 验证文件类型
   $mime_type = $file->getMimeType();
   $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
-  
+
   if (!in_array($mime_type, $allowed_types)) {
     throw new \Exception("Invalid file type");
   }
-  
+
   // 创建媒体实体
   $media = \Drupal::entityTypeManager()
     ->getStorage('media')
@@ -197,12 +197,12 @@ function upload_media_file($file_source, $media_type) {
       'name' => $file->getFilename(),
       'status' => TRUE,
     ]);
-  
+
   $media->save();
-  
+
   // 清除缓存
   \Drupal::service('cache.backend')->invalidateById('media_' . $media->id());
-  
+
   return $media->id();
 }
 
@@ -227,7 +227,7 @@ sequenceDiagram
     participant Media as 媒体实体
     participant Entity as 内容实体
     participant DB as 数据库
-    
+
     User->>+EntityForm: 选择媒体
     EntityForm->>+MediaField: 获取可用媒体
     MediaField->>+Media: 查询媒体列表
@@ -252,26 +252,26 @@ function attach_media_to_node($node_id, $media_id) {
   $node = \Drupal::entityTypeManager()
     ->getStorage('node')
     ->load($node_id);
-  
+
   if (!$node || !$node->hasField('field_media')) {
     throw new \Exception("Node does not have media field");
   }
-  
+
   $media = \Drupal::entityTypeManager()
     ->getStorage('media')
     ->load($media_id);
-  
+
   if (!$media) {
     throw new \Exception("Media not found");
   }
-  
+
   // 关联媒体到节点
   $node->get('field_media')->setValue([
     ['target_id' => $media_id],
   ]);
-  
+
   $node->save();
-  
+
   return TRUE;
 }
 ```
@@ -294,9 +294,9 @@ function create_media_type($machine_name, $label, $description = '') {
     'label' => $label,
     'description' => $description,
   ]);
-  
+
   $bundle->save();
-  
+
   return $bundle->id();
 }
 
@@ -321,9 +321,9 @@ function create_media_field($entity_type, $bundle, $field_name, $target_type) {
     'cardinality' => 1,
     'required' => FALSE,
   ]);
-  
+
   $field_storage->save();
-  
+
   // 创建设置
   $field_config = \Drupal\field\Entity\FieldConfig::create([
     'field_name' => $field_name,
@@ -346,9 +346,9 @@ function create_media_field($entity_type, $bundle, $field_name, $target_type) {
     ],
     'field_storage_config' => $field_storage->id(),
   ]);
-  
+
   $field_config->save();
-  
+
   return $field_name;
 }
 
@@ -386,15 +386,15 @@ function load_multiple_media($media_ids) {
  */
 function query_media($bundle = NULL, $status = NULL) {
   $query = \Drupal::entityTypeManager()->getQuery('media');
-  
+
   if ($bundle) {
     $query->condition('bundle', $bundle);
   }
-  
+
   if ($status !== NULL) {
     $query->condition('status', $status);
   }
-  
+
   return $query->execute();
 }
 
@@ -427,12 +427,12 @@ function create_product_image_media_type() {
     'label' => 'Product Image',
     'description' => 'Product images for e-commerce',
   ]);
-  
+
   $image_type->save();
-  
+
   // 创建媒体字段
   create_media_field('media', 'product_image', 'field_product_variant', 'image');
-  
+
   return $image_type->id();
 }
 ```
@@ -445,7 +445,7 @@ function create_product_image_media_type() {
  */
 function upload_product_main_image($product_id, $file_source) {
   $file = \Drupal::file()->load($file_source);
-  
+
   // 创建媒体实体
   $media = \Drupal::entityTypeManager()
     ->getStorage('media')
@@ -455,17 +455,17 @@ function upload_product_main_image($product_id, $file_source) {
       'name' => $file->getFilename(),
       'status' => TRUE,
     ]);
-  
+
   $media->save();
-  
+
   // 设置为主要图片
   $product = \Drupal::entityTypeManager()
     ->getStorage('product')
     ->load($product_id);
-  
+
   $product->set('field_main_image', ['target_id' => $media->id()]);
   $product->save();
-  
+
   return $media->id();
 }
 ```
@@ -488,9 +488,9 @@ function create_remote_video_media_type() {
     'label' => 'Remote Video',
     'description' => 'Remote video from YouTube, Vimeo, etc.',
   ]);
-  
+
   $video_type->save();
-  
+
   return $video_type->id();
 }
 ```
@@ -509,12 +509,12 @@ function create_remote_video($url, $provider = 'youtube') {
       'uri' => $url,
       'status' => TRUE,
     ]);
-  
+
   // 设置 provider
   $media->set('field_video_provider', $provider);
-  
+
   $media->save();
-  
+
   return $media->id();
 }
 ```
@@ -532,52 +532,52 @@ function create_remote_video($url, $provider = 'youtube') {
  * 媒体库查询
  */
 class MediaLibraryQuery {
-  
+
   public function buildQuery($filter = [], $sort = 'created', $order = 'DESC', $offset = 0, $limit = 20) {
     $query = \Drupal::entityTypeManager()->getQuery('media');
-    
+
     // 类型过滤
     if (!empty($filter['bundle'])) {
       $query->condition('bundle', $filter['bundle']);
     }
-    
+
     // 状态过滤
     if (!empty($filter['status'])) {
       $query->condition('status', $filter['status']);
     }
-    
+
     // 关键词搜索
     if (!empty($filter['keyword'])) {
       $query->condition('name', $filter['keyword'], 'CONTAINS');
     }
-    
+
     // 日期范围过滤
     if (!empty($filter['created_start'])) {
       $query->condition('created', strtotime($filter['created_start']), '>=');
     }
-    
+
     if (!empty($filter['created_end'])) {
       $query->condition('created', strtotime($filter['created_end']), '<=');
     }
-    
+
     // 排序
     $query->sort($sort, $order);
-    
+
     // 分页
     $query->range($offset, $limit);
-    
+
     return $query->execute();
   }
-  
+
   public function searchMediaLibrary($keyword, $bundle = NULL) {
     $filter = [
       'keyword' => $keyword,
       'bundle' => $bundle,
       'status' => TRUE,
     ];
-    
+
     $media_ids = $this->buildQuery($filter, 'created', 'DESC', 0, 50);
-    
+
     return \Drupal::entityTypeManager()
       ->getStorage('media')
       ->loadMultiple($media_ids);
@@ -605,7 +605,7 @@ erDiagram
         datetime created created_time
         datetime changed changed_time
     }
-    
+
     FILE {
         int id file_id
         string uri uri
@@ -613,22 +613,22 @@ erDiagram
         string mime mime_type
         int size size
     }
-    
+
     MEDIA_TYPE {
         string id type_id
         string label type_label
         string description description
     }
-    
+
     MEDIA ||--o{ FILE : "references"
     MEDIA ||--|| MEDIA_TYPE : "belongs_to"
     MEDIA_TYPE ||--o{ MEDIA : "has"
-    
+
     NODE {
         int id node_id
         string type type
     }
-    
+
     NODE ||--o{ MEDIA : "contains"
     MEDIA ||--o{ USER : "owned_by"
     USER {
@@ -710,12 +710,12 @@ if ($media->access('delete')) {
  */
 function batch_upload_media($files, $media_type) {
   $media_ids = [];
-  
+
   foreach ($files as $file) {
     $media_id = upload_media_file($file, $media_type);
     $media_ids[] = $media_id;
   }
-  
+
   return $media_ids;
 }
 ```
@@ -728,16 +728,16 @@ function batch_upload_media($files, $media_type) {
  */
 function optimize_media_load($media_ids) {
   $media_map = [];
-  
+
   // 批量加载
   $medias = \Drupal::entityTypeManager()
     ->getStorage('media')
     ->loadMultiple($media_ids);
-  
+
   foreach ($medias as $media) {
     $media_map[$media->id()] = $media;
   }
-  
+
   return $media_map;
 }
 ```
@@ -757,7 +757,7 @@ $media_type->save();
 ```
 
 ### Q2: 如何限制媒体上传大小？
-**A**: 
+**A**:
 ```bash
 admin/config/media/file-settings
 ```
@@ -773,7 +773,7 @@ $media->delete();
 **A**: 使用 media_library 模块或自定义查询。
 
 ### Q5: 如何设置媒体访问权限？
-**A**: 
+**A**:
 ```php
 $media->addPermissionCheck('access');
 ```
@@ -801,10 +801,10 @@ $media->addPermissionCheck('access');
 
 ---
 
-**文档版本**: v2.0  
-**状态**: 活跃维护  
-**最后更新**: 2026-04-07  
-**维护**: OpenClaw  
+**文档版本**: v2.0
+**状态**: 活跃维护
+**最后更新**: 2026-04-07
+**维护**: OpenClaw
 
 *所有技术信息基于 Drupal.org 官方文档和实际项目经验*
 *所有 ER 图经过三重 Mermaid 语法检查*
@@ -812,6 +812,6 @@ $media->addPermissionCheck('access');
 
 ---
 
-*下一篇*: [Webform 表单系统](core-modules/09-webform.md)  
-*返回*: [核心模块索引](core-modules/00-index.md)  
+*下一篇*: [Webform 表单系统](core-modules/09-webform.md)
+*返回*: [核心模块索引](core-modules/00-index.md)
 *上一篇*: [Layout Builder 布局系统](core-modules/07-layout-builder.md)

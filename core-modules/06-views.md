@@ -5,10 +5,10 @@ description: Complete guide to Drupal Views module. Covers views creation, displ
 
 # Drupal Views 查询系统完整指南
 
-**版本**: v1.0  
-**Drupal 版本**: 11.x  
-**状态**: 活跃维护  
-**更新时间**: 2026-04-05  
+**版本**: v1.0
+**Drupal 版本**: 11.x
+**状态**: 活跃维护
+**更新时间**: 2026-04-05
 
 ---
 
@@ -193,22 +193,22 @@ filters:
   - name: status
     handler: views_handler_filter_boolean
     value: true  # 只显示已发布内容
-  
+
   - name: type
     handler: views_handler_filter_in_list
     value:
       - product
       - special_offer
-  
+
   - name: language
     handler: views_handler_filter_node_language
     value: en
-  
+
   - name: created
     handler: views_handler_filter_date
     min_date: 'today - 30 days'
     max_date: today
-  
+
   - name: field_price
     handler: views_handler_filter_numeric_relation
     operator: between
@@ -245,11 +245,11 @@ sort:
   - field: created
     direction: DESC
     weight: 1
-  
+
   - field: field_price
     direction: ASC
     weight: 2
-  
+
   - field: title
     direction: ASC
     weight: 3
@@ -362,10 +362,10 @@ function create_product_view() {
       ],
     ],
   ]);
-  
+
   // 保存视图
   $view->save();
-  
+
   return $view;
 }
 
@@ -380,11 +380,11 @@ create_product_view();
  */
 function modify_product_view() {
   $view = \Drupal::entityTypeManager()->getStorage('view')->load('product_list');
-  
+
   if (!$view) {
     return FALSE;
   }
-  
+
   // 添加新字段
   $view->display_handler->setOption('display', [
     'default' => [
@@ -407,9 +407,9 @@ function modify_product_view() {
       ],
     ],
   ]);
-  
+
   $view->save();
-  
+
   return TRUE;
 }
 ```
@@ -424,24 +424,24 @@ function modify_product_view() {
 function create_basic_view_query($entity_type = 'node') {
   $query = \Drupal::entityQuery($entity_type)
     ->condition('status', 1)  // 已发布
-    
+
     // 添加排序
     ->sort('created', 'DESC')
-    
+
     // 添加分页
     ->range(0, 10)
-    
+
     // 启用权限检查
     ->accessCheck(TRUE);
-  
+
   // 获取 ID 列表
   $nids = $query->execute();
-  
+
   // 加载实体
   $entities = \Drupal::entityTypeManager()
     ->getStorage($entity_type)
     ->loadMultiple($nids);
-  
+
   return $entities;
 }
 ```
@@ -454,38 +454,38 @@ function create_basic_view_query($entity_type = 'node') {
 function create_complex_view_query($options) {
   $query = \Drupal::entityQuery('node')
     ->condition('status', 1)
-    
+
     // 内容类型筛选
     ->condition('type', $options['type'] ?? NULL, 'IN')
-    
+
     // 语言筛选
     ->condition('langcode', \Drupal::languageManager()->getCurrentLanguage()->getId())
-    
+
     // 日期筛选
     ->condition('created', strtotime($options['date_start'] ?? '-30 days'), '>=')
     ->condition('created', strtotime($options['date_end'] ?? '+1 day'), '<')
-    
+
     // 作者筛选
     ->condition('uid', $options['author'] ?? NULL)
-    
+
     // 标签筛选
     ->condition('field_tags', $options['tags'] ?? NULL, 'IN')
-    
+
     // 价格筛选
     ->condition('field_price', $options['price_min'] ?? 0, '>=')
     ->condition('field_price', $options['price_max'] ?? 99999, '<=')
-    
+
     // 访问检查
     ->accessCheck(TRUE)
-    
+
     // 按日期排序
     ->sort('created', 'DESC')
-    
+
     // 分页
     ->range($options['offset'] ?? 0, $options['limit'] ?? 20);
-  
+
   $nids = $query->execute();
-  
+
   return \Drupal::entityTypeManager()
     ->getStorage('node')
     ->loadMultiple($nids);
@@ -510,11 +510,11 @@ $products = create_complex_view_query([
  */
 function cache_optimized_views($view_id) {
   $view = \Drupal::entityTypeManager()->getStorage('view')->load($view_id);
-  
+
   if (!$view) {
     return FALSE;
   }
-  
+
   // 启用缓存
   $view->setDisplayOption('default', 'cache', [
     'cache' => [
@@ -527,9 +527,9 @@ function cache_optimized_views($view_id) {
       'context' => ['language:content'],
     ],
   ]);
-  
+
   $view->save();
-  
+
   return TRUE;
 }
 
@@ -541,15 +541,15 @@ function get_view_cache_tags($view) {
     'view_list:' . $view->id(),
     'node_list',
   ];
-  
+
   // 添加内容类型标签
   $view->getBaseFieldDefinitions();
   $bundles = $view->getStorageHandler()->getBundles();
-  
+
   foreach ($bundles as $bundle) {
     $tags[] = 'node_list:' . $bundle;
   }
-  
+
   return $tags;
 }
 ```
@@ -600,9 +600,9 @@ function create_vbo_view() {
       ],
     ],
   ]);
-  
+
   $view->save();
-  
+
   return $view;
 }
 ```
@@ -616,17 +616,17 @@ function create_vbo_view() {
  */
 function export_view_config($view_id) {
   $view = \Drupal::entityTypeManager()->getStorage('view')->load($view_id);
-  
+
   if (!$view) {
     return FALSE;
   }
-  
+
   // 转换为配置
   $config = $view->getRawConfiguration();
-  
+
   // 保存到文件
   $file_path = \Drupal::service('file_system')->realpath('sites/default/files/views');
-  
+
   try {
     file_put_contents($file_path . '/' . $view_id . '.yml', yaml_encode($config));
     return TRUE;
@@ -681,10 +681,10 @@ view1: 视图 1
 function optimize_views_query($view) {
   // 减少查询次数
   $view->display_handler->setOption('pager_type', 'full');
-  
+
   // 使用分页
   $view->display_handler->setOption('items_per_page', 20);
-  
+
   // 禁用不必要的字段加载
   $view->display_handler->setOption('fields', [
     'nid' => TRUE,  // 只加载需要的字段
@@ -702,7 +702,7 @@ cache_settings:
     cache_tags:
       - node_list
       - view_list
-   
+
   - cache_views_query: TRUE
   - use_context: TRUE
 ```
@@ -716,7 +716,7 @@ cache_settings:
  */
 function access_control_views($view_id) {
   $view = \Drupal::entityTypeManager()->getStorage('view')->load($view_id);
-  
+
   // 设置访问权限
   $view->display_handler->setOption('access', [
     'type' => 'permission',
@@ -724,7 +724,7 @@ function access_control_views($view_id) {
       'permission' => ['access content'],
     ],
   ]);
-  
+
   $view->save();
 }
 ```
@@ -737,24 +737,24 @@ function access_control_views($view_id) {
 **A**: 使用预配置模板或 Drush 命令
 
 ### Q2: 视图加载慢怎么办？
-**A**: 
+**A**:
 - 启用缓存
 - 优化查询
 - 减少字段数量
 - 使用分页
 
 ### Q3: 如何保存视图配置？
-**A**: 
+**A**:
 - 使用配置导出
 - 或使用 drush config-export
 
 ### Q4: 如何恢复视图？
-**A**: 
+**A**:
 - 使用配置导入
 - 或使用 drush config-import
 
 ### Q5: 如何调试视图？
-**A**: 
+**A**:
 - 使用 Views UI 调试模式
 - 检查查询日志
 - 启用视图调试输出
@@ -778,12 +778,12 @@ function access_control_views($view_id) {
 
 ---
 
-**文档版本**: v1.0  
-**状态**: 活跃维护  
+**文档版本**: v1.0
+**状态**: 活跃维护
 **最后更新**: 2026-04-05
 
 ---
 
-*下一篇*: [Configuration 配置系统](core-modules/05-config.md)  
-*返回*: [核心模块索引](core-modules/00-index.md)  
+*下一篇*: [Configuration 配置系统](core-modules/05-config.md)
+*返回*: [核心模块索引](core-modules/00-index.md)
 *上一篇*: [Field 字段系统](core-modules/04-field.md)
